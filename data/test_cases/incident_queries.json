@@ -1,0 +1,17 @@
+[
+  {
+    "query": "failed login privilege escalation workstation-07",
+    "expected_keywords": ["failed login", "privilege", "workstation-07"],
+    "expected_min_risk": 60
+  },
+  {
+    "query": "normal backup server-02",
+    "expected_keywords": ["scheduled backup", "server-02"],
+    "expected_min_risk": 0
+  },
+  {
+    "query": "unknown host impossible travel",
+    "expected_keywords": [],
+    "expected_min_risk": 0
+  }
+]

@@ -1,0 +1,8 @@
+services:
+  security-agent:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./audit_logs:/app/audit_logs
+    command: ["python", "src/main.py", "--query", "investigate suspicious outbound connection"]

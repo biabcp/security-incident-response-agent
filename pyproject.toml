@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "security-incident-response-agent"
+version = "0.1.0"
+description = "Vendor-neutral agentic AI assistant for security incident triage"
+requires-python = ">=3.10"
+dependencies = [
+  "pydantic>=2.7,<3"
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
