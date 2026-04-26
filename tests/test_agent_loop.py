@@ -31,17 +31,20 @@ def test_agent_returns_insufficient_evidence(tmp_path):
     assert "Insufficient evidence." in state.final_report
 
 
-def test_agent_redacts_ip_fields_in_evidence(tmp_path):
+def test_agent_stores_redacted_evidence_separately(tmp_path):
     agent = build_test_agent(tmp_path)
     state = agent.run("network workstation-07", review_context={"mode": "auto", "reviewer": "qa"})
     assert state.evidence
-    assert any("[REDACTED_IP]" in str(item.get("source_ip", "")) for item in state.evidence)
+    assert state.redacted_evidence
+    assert any("[REDACTED_IP]" in str(item.get("source_ip", "")) for item in state.redacted_evidence)
+    assert any("[REDACTED_IP]" not in str(item.get("source_ip", "")) for item in state.evidence)
 
 
 def test_draft_report_uses_latest_analyze_step(tmp_path):
     agent = build_test_agent(tmp_path)
     state = IncidentAgentState(query="failed login")
     state.evidence = [{"id": "evt-1", "timestamp": "t", "host": "h", "event_type": "auth", "redacted_message": "m"}]
+    state.redacted_evidence = [{"id": "evt-1", "timestamp": "t", "host": "h", "event_type": "auth", "redacted_message": "m"}]
     state.risk_score = 42
     state.steps.append(AgentStep("analyze", "Analyzed retrieved evidence", "Expected analysis"))
     state.steps.append(AgentStep("act", "Interleaving step", 123))
