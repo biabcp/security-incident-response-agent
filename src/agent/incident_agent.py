@@ -113,9 +113,12 @@ class SecurityIncidentAgent:
             state.draft_report = "Incident Summary: Insufficient evidence.\nRecommendation: Collect additional logs or refine the query."
         else:
             analysis = self._latest_step_result(state, "analyze", default="No analysis available.")
+            presented_evidence = state.evidence[:5]
+            presented_redacted = state.redacted_evidence[:5]
             lines = [
-                f"- [{item.get('id', 'no-id')}] {item.get('timestamp', 'unknown')} | {item.get('host', 'unknown')} | {item.get('event_type', 'unknown')} | {item.get('redacted_message', item.get('message', 'no message'))}"
-                for item in state.redacted_evidence[:5]
+                f"- [{item['id']}] {item.get('timestamp', 'unknown')} | {item.get('host', 'unknown')} | {item.get('event_type', 'unknown')} | {item.get('redacted_message', item.get('message', 'no message'))}"
+                for item in presented_redacted
+                if item.get("id")
             ]
             state.draft_report = (
                 f"Incident Summary:\nRisk score: {state.risk_score}/100\n\n"
@@ -124,7 +127,7 @@ class SecurityIncidentAgent:
                 "Recommendation:\nValidate affected users/hosts and contain if unauthorized behavior is confirmed."
             )
 
-        grounded = self.evidence_validator.has_citations(state.draft_report, state.evidence)
+        grounded = self.evidence_validator.has_citations(state.draft_report, presented_evidence if state.evidence else [])
         if state.evidence and not grounded:
             state.draft_report = "Incident Summary: Insufficient evidence."
         state.steps.append(AgentStep("draft_report", "Generated draft incident report", state.draft_report))

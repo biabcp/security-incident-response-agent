@@ -36,8 +36,8 @@ def test_agent_stores_redacted_evidence_separately(tmp_path):
     state = agent.run("network workstation-07", review_context={"mode": "auto", "reviewer": "qa"})
     assert state.evidence
     assert state.redacted_evidence
-    assert any("[REDACTED_IP]" in str(item.get("source_ip", "")) for item in state.redacted_evidence)
-    assert any("[REDACTED_IP]" not in str(item.get("source_ip", "")) for item in state.evidence)
+    assert any("<REDACTED_IP>" in str(item.get("source_ip", "")) for item in state.redacted_evidence)
+    assert any("<REDACTED_IP>" not in str(item.get("source_ip", "")) for item in state.evidence)
 
 
 def test_draft_report_uses_latest_analyze_step(tmp_path):
