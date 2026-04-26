@@ -18,3 +18,12 @@ class InMemoryVectorStore:
 
     def all(self) -> List[VectorRecord]:
         return self.records
+
+    def query(self, vector: List[float], top_k: int = 5) -> List[VectorRecord]:
+        scored = []
+        for record in self.records:
+            score = sum(a * b for a, b in zip(record.vector, vector))
+            if score > 0:
+                scored.append((score, record))
+        scored.sort(key=lambda item: item[0], reverse=True)
+        return [record for _, record in scored[:top_k]]

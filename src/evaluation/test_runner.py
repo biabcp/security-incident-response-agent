@@ -21,7 +21,7 @@ def run_retrieval_eval(cases_path: str, logs_path: str) -> dict:
     end = time.perf_counter() * 1000
 
     summary = {
-        "mean_retrieval_relevance": sum(scores) / len(scores),
+        "mean_retrieval_relevance": (sum(scores) / len(scores)) if scores else 0.0,
         "latency_ms": latency_ms(start, end),
     }
     return summarize(summary)

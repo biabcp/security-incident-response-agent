@@ -9,3 +9,13 @@ def test_log_search_returns_matches():
     results = tool.search("failed login workstation-07")
     assert results
     assert any("workstation-07" in str(item) for item in results)
+
+
+def test_log_search_uses_and_for_multi_term_queries():
+    logs = [
+        {"id": "1", "message": "failed backup completed"},
+        {"id": "2", "message": "user login successful"},
+    ]
+    tool = LogSearchTool(logs)
+    results = tool.search("failed login")
+    assert results == []
