@@ -6,5 +6,5 @@ class PIIRedactor:
     IPV4_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 
     def redact(self, text: str) -> str:
-        text = self.EMAIL_RE.sub("[REDACTED_EMAIL]", text)
-        return self.IPV4_RE.sub("[REDACTED_IP]", text)
+        text = self.EMAIL_RE.sub("<REDACTED_EMAIL>", text)
+        return self.IPV4_RE.sub("<REDACTED_IP>", text)
