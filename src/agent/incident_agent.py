@@ -80,9 +80,7 @@ class SecurityIncidentAgent:
 
     def _act(self, state: IncidentAgentState, plan: List[str]) -> None:
         if "retrieve_logs" in plan:
-            evidence = self.log_search_tool.search(state.query)
-            for event in evidence:
-                event["redacted_message"] = self.redactor.redact(str(event.get("message", "")))
+            evidence = [self._redact_event(event) for event in self.log_search_tool.search(state.query)]
             state.evidence = evidence
             self.memory.add_tool_call("log_search", {"query": state.query, "count": len(evidence)})
             state.steps.append(AgentStep("act", "Retrieved relevant logs", len(evidence)))
@@ -112,6 +110,7 @@ class SecurityIncidentAgent:
         if not state.evidence:
             state.draft_report = "Incident Summary: Insufficient evidence.\nRecommendation: Collect additional logs or refine the query."
         else:
+            analysis = self._latest_step_result(state, "analyze", default="No analysis available.")
             lines = [
                 f"- [{item.get('id', 'no-id')}] {item.get('timestamp', 'unknown')} | {item.get('host', 'unknown')} | {item.get('event_type', 'unknown')} | {item.get('redacted_message', item.get('message', 'no message'))}"
                 for item in state.evidence[:5]
@@ -119,7 +118,7 @@ class SecurityIncidentAgent:
             state.draft_report = (
                 f"Incident Summary:\nRisk score: {state.risk_score}/100\n\n"
                 f"Evidence:\n{chr(10).join(lines)}\n\n"
-                f"Assessment:\n{state.steps[-1].result}\n\n"
+                f"Assessment:\n{analysis}\n\n"
                 "Recommendation:\nValidate affected users/hosts and contain if unauthorized behavior is confirmed."
             )
 
@@ -152,6 +151,26 @@ class SecurityIncidentAgent:
         else:
             state.final_report = state.draft_report
         state.steps.append(AgentStep("finalize", "Finalized report", state.final_report))
+
+    def _latest_step_result(self, state: IncidentAgentState, step_name: str, default: str = "") -> str:
+        for step in reversed(state.steps):
+            if step.step == step_name:
+                return str(step.result)
+        return default
+
+    def _redact_event(self, event: Dict[str, Any]) -> Dict[str, Any]:
+        redacted_event = self._redact_value(event)
+        redacted_event["redacted_message"] = self.redactor.redact(str(event.get("message", "")))
+        return redacted_event
+
+    def _redact_value(self, value: Any) -> Any:
+        if isinstance(value, str):
+            return self.redactor.redact(value)
+        if isinstance(value, dict):
+            return {key: self._redact_value(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [self._redact_value(item) for item in value]
+        return value
 
     def _audit(self, state: IncidentAgentState) -> None:
         self.audit_logger.log(
