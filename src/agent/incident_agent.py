@@ -30,6 +30,7 @@ class AgentStep:
 class IncidentAgentState:
     query: str
     evidence: List[Dict[str, Any]] = field(default_factory=list)
+    redacted_evidence: List[Dict[str, Any]] = field(default_factory=list)
     steps: List[AgentStep] = field(default_factory=list)
     risk_score: int = 0
     draft_report: str = ""
@@ -80,8 +81,9 @@ class SecurityIncidentAgent:
 
     def _act(self, state: IncidentAgentState, plan: List[str]) -> None:
         if "retrieve_logs" in plan:
-            evidence = [self._redact_event(event) for event in self.log_search_tool.search(state.query)]
+            evidence = self.log_search_tool.search(state.query)
             state.evidence = evidence
+            state.redacted_evidence = [self._redact_event(event) for event in evidence]
             self.memory.add_tool_call("log_search", {"query": state.query, "count": len(evidence)})
             state.steps.append(AgentStep("act", "Retrieved relevant logs", len(evidence)))
 
@@ -113,7 +115,7 @@ class SecurityIncidentAgent:
             analysis = self._latest_step_result(state, "analyze", default="No analysis available.")
             lines = [
                 f"- [{item.get('id', 'no-id')}] {item.get('timestamp', 'unknown')} | {item.get('host', 'unknown')} | {item.get('event_type', 'unknown')} | {item.get('redacted_message', item.get('message', 'no message'))}"
-                for item in state.evidence[:5]
+                for item in state.redacted_evidence[:5]
             ]
             state.draft_report = (
                 f"Incident Summary:\nRisk score: {state.risk_score}/100\n\n"
@@ -178,7 +180,8 @@ class SecurityIncidentAgent:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "query": state.query,
                 "risk_score": state.risk_score,
-                "evidence_count": len(state.evidence),
+                "evidence_count": len(state.redacted_evidence),
+                "evidence": state.redacted_evidence,
                 "human_review": state.human_review.__dict__ if state.human_review else None,
                 "memory": self.memory.tool_calls,
                 "steps": [step.__dict__ for step in state.steps],
